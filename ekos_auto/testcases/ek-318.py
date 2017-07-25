@@ -67,5 +67,7 @@ rtn = my_utils.check_app_status(ip,app_list)
 if rtn != True:
 	sys.exit()	
 
+#clean testbed
+my_utils.clean_app(ip)
 
-my_utils.bar_sleep(5)
+info('ok')

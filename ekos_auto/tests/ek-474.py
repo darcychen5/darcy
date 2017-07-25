@@ -62,7 +62,7 @@ if rtn != True:
 	sys.exit()
 
 #let runnning 30 min
-my_utils.bar_sleep(600)
+my_utils.bar_sleep(60)
 #check 
 rtn = my_utils.check_app_status(ip,app_list)
 if rtn != True:

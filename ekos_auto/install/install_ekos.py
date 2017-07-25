@@ -4,7 +4,7 @@ from log import *
 import ekosUtils
 flag = sys.argv[1]
 configfile = 'config.ini'
-member_list = ["darcy","fengqianjun","helimeng","lichengsong","wangmeng","xiebin","darcy1","jiangjun","FC"]
+member_list = ["darcy","fengqianjun","helimeng","lichengsong","wangmeng","xiebin","darcy1","jiangjun","FC","demo"]
 
 my_utils = ekosUtils.Utils()
 package = my_utils.get_latest_build()

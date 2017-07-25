@@ -392,11 +392,31 @@ class Utils:
 		info(rtn['stdout'])
 		return rtn['stdout']
 
+	def active_plugin(self,ip):
+		#appstore
+		url = "http://" + ip + ":30000/api/plugin"
+		json_appstore = {"name":"appstore"}
+		json_ci = {"name":"ci"}
+		json_network = {"name":"network"}
+		json_node = {"name":"node"}
+		json_registry = {"name":"registry"}
+		json_stack = {"name":"stack"}
+		json_storage = {"name":"storage"}
+		json_tenant = {"name":"tenant"}
+
+		plugin_lists = ["json_appstore","json_ci","json_network","json_node","json_registry","json_stack","json_storage","json_tenant"]
+		for plugin in plugin_lists:
+			rtn = self.call_rest_api(url,"POST",json=json.dumps(eval(plugin)))
+			if json.loads(rtn)['status'] == "ok":
+				info("active plugin %s successfully" % plugin)
+				time.sleep(2)
+			else:
+				error('active plugin %s failed' % plugin)
+				return False
+		return True
 
 
 #-------------------------------app related-----------------------------------------
-	def active_all_plugin(self,ip):
-		pass
 
 
 	def create_app(self):

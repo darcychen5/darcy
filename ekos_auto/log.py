@@ -25,7 +25,7 @@ def debug(*args):
 def info(*args):
     msg = ' '.join([ str(x) for x in args ])
     try:
-        print >> sys.stderr, msg
+        print msg
     except:
         pass
 
@@ -37,7 +37,7 @@ def error(*args):
     pid = os.getpid()
     message = '%s [%s]: %s' % (d, pid, msg)
     try:
-        print >> sys.stderr, msg
+        print msg
     except:
         pass
 
@@ -54,7 +54,7 @@ def warn(*args):
     pid = os.getpid()
     message = '%s [%s]: %s' % (d, pid, msg)
     try:
-        print >> sys.stdout, msg
+        print msg
     except:
         pass
 

@@ -57,7 +57,10 @@ if rtn != True:
 for poweroff_node in poweroff_nodes:
 	my_utils.poweron_vm(poweroff_node)
 
-my_utils.bar_sleep(60)
+#clean testbed
+my_utils.clean_app(ip)
+
+info('ok')
 
 
 
