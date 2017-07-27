@@ -412,7 +412,6 @@ class Utils:
 				time.sleep(2)
 			else:
 				error('active plugin %s failed' % plugin)
-				return False
 		return True
 
 
@@ -477,7 +476,7 @@ class Utils:
 	def get_all_app(self,ip):
 		node_list = []
 		url = "http://" + ip + ":30000/service/stack/api/app"
-		params = "namespace=default&page=1&itemsPerPage=10"
+		params = "namespace=default&page=1&itemsPerPage=100"
 		rtn = self.call_rest_api(url,"GET",params=params)
 		for node_name in json.loads(rtn)['apps']:
 			node_list.append(node_name['name'])
@@ -486,12 +485,129 @@ class Utils:
 			return None
 		return node_list
 
+	def get_app_service_port(self,ip,app_name):
+		url = "http://" + ip + ":30000/service/stack/api/app/detail"
+		params = "namespace=default&name=" + app_name
+		rtn = self.call_rest_api(url,"GET",params=params)
+		if rtn == None:
+			return None
+		service_port = json.loads(rtn)['service']['ports'][0]['servicePort']
+		return service_port
+
 	def clean_app(self,ip):
 		node_list = self.get_all_app(ip)
 		if node_list == None:
 			return True
 		for node in node_list:
 			self.delete_app(ip,node)
+		return True
+
+	def download_upload_img(self,ip):
+		cmd = "curl -O http://192.168.1.234:8080/ekos/stressImages/stress_centos.tgz"
+		self.ssh_cmd(ip,"root","password",cmd)
+
+		cmd = "docker load -i stress_centos.tgz"
+		self.ssh_cmd(ip,"root","password",cmd)
+
+		cmd = "docker login registry.ekos.local -uadmin -padmin12345"
+		self.ssh_cmd(ip,"root","password",cmd)
+
+		cmd = "docker push registry.ekos.local/library/stress_centos:latest"
+		self.ssh_cmd(ip,"root","password",cmd)
+		return True
+
+	def change_app_replica(self,ip,app_name,replica,namespace="default"):
+		url = "http://" + ip + ":30000/service/stack/api/app/scale"
+		obj_json = {}
+		obj_json['name'] = app_name
+		obj_json['namespace'] = namespace
+		obj_json['replicas'] = int(replica)
+		rtn = self.call_rest_api(url,"POST",json=json.dumps(obj_json))
+		if rtn != None:
+			if json.loads(rtn)['status'] == "success":
+				info('change app %s replica to %d number successfully!' % (app_name,int(replica)))
+				return True
+		error('change app %s replica to %d number failed!' % (app_name,int(replica)))
+		return False
+	def get_app_replica(self,ip,app_name):
+		url = "http://" + ip + ":30000/service/stack/api/app/detail"
+		params = "namespace=default&name=" + app_name
+		rtn = self.call_rest_api(url,"GET",params=params)
+		if rtn == None:
+			return None
+		service_port = json.loads(rtn)['replicas']
+		return service_port
+
+#----------------------------------------lb related-----------------------------------------------------------
+	def create_tcp_lb(self,ip,lb_name,listen_port,app_name,app_service_port):
+		obj_json = {"name":"lb-default","namespace":"default","desc":"","tcpRules":[{"port":None,"serviceName":None,"servicePort":None}],"httpRules":[]}
+		obj_json['name'] = lb_name
+		obj_json['tcpRules'][0]['port'] = int(listen_port)
+		obj_json['tcpRules'][0]['serviceName'] = app_name
+		obj_json['tcpRules'][0]['servicePort'] = int(app_service_port)
+		url = "http://" + ip + ":30000/service/stack/api/balance"
+		rtn = self.call_rest_api(url,"POST",json=json.dumps(obj_json))
+		if json.loads(rtn)['status'] == "success":
+			info('create tcp loadbalance %s successfully!' % lb_name)
+			return True
+		else:
+			error('create tcp loadbalance %s failed!' % lb_name)
+			return False
+
+	def create_tcp_lb_for_each_app(self,ip,listen_port_start):
+		app_list = self.get_all_app(ip)
+		for app in app_list:
+			lb_name = "lb-auto-" + app
+			service_port = self.get_app_service_port(ip,app)
+			self.create_tcp_lb(ip,lb_name,listen_port_start,app,service_port)
+			listen_port_start = listen_port_start + 1
+		return True
+
+	def delete_lb(self,ip,lb_name,namespace="default"):
+		url = "http://" + ip + ":30000/service/stack/api/balance/del"
+		obj_json = {}
+		obj_json['name'] = lb_name
+		obj_json['namespace'] = namespace
+		rtn = self.call_rest_api(url,"POST",json=json.dumps(obj_json))
+		if rtn != None:
+			if json.loads(rtn)['status'] == "success":
+				info('loadbanlance %s delete successfully!' % lb_name)
+				return True
+		error('loadbanlance %s delete failed!' % lb_name)
+		return False
+
+	def get_all_lb_list(self,ip):
+		lb_list = []
+		url = "http://" + ip + ":30000/service/stack/api/balance"
+		params = "namespace=default&page=1&itemsPerPage=100"
+		rtn = self.call_rest_api(url,"GET",params=params)
+		for lb in json.loads(rtn)['balances']:
+			lb_name = lb['name']
+			lb_list.append(lb_name)
+		if not lb_list:
+			info('load balance is emputy!')
+			return None
+		return lb_list
+
+	def delete_all_lb(self,ip):
+		lb_list = self.get_all_lb_list(ip)
+		if lb_list:
+			for lb_name in lb_list:
+				self.delete_lb(ip,lb_name)
+			return True
+		return False
+
+
+	def check_lb_status(self,ip):
+		url = "http://" + ip + ":30000/service/stack/api/balance"
+		params = "namespace=default&page=1&itemsPerPage=100"
+		rtn = self.call_rest_api(url,"GET",params=params)
+		for lb in json.loads(rtn)['balances']:
+			lb_name = lb['name']
+			lb_status = lb['status']
+			if lb_status != "Running":
+				error('load balance %s is in %s state' % (lb_name,lb_status))
+				return False
 		return True
 
 #-----------------------------storage related-----------------------------
@@ -525,7 +641,7 @@ class Utils:
 	def get_nfs_list(self,ip):
 		nfs_list = []
 		url = "http://" + ip + ":30000/service/storage/api/storage"
-		params = "page=1&itemsPerPage=10&pluginname=storage"
+		params = "page=1&itemsPerPage=100&pluginname=storage"
 		rtn = self.call_rest_api(url,"GET",params=params)
 		if rtn == None:
 			error('get nfs list failed!')

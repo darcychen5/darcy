@@ -14,7 +14,7 @@ nfs_name = "darcy-nfs"
 
 #add nfs 
 nfs_server = "192.168.20.255"
-nfs_dir = "/mnt/nfs-share"
+nfs_dir = "/mnt/nfs-share-1"
 rtn = my_utils.create_nfs_storage(ip,nfs_name,nfs_server,nfs_dir)
 if rtn == False:
 	error('create nfs storage failed!')

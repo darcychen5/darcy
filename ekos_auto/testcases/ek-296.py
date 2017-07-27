@@ -13,7 +13,7 @@ node_list = ["EKOS-offline-darcy-62","EKOS-offline-darcy-63","EKOS-offline-darcy
 #create 10 app
 cookies = my_utils._get_cookie(ip)
 url = "http://" + ip + ":30000/service/stack/api/app"
-obj_json = {"name":"hello-test2","namespace":"default","stateful":"none","replicas":1,"cpu":500,"memory":256,"diskSize":20000,"containers":[{"name":"hello-test","image":"registry.ekos.local/library/hello:latest","command":"sh","envs":[],"logDir":"","healthCheck":None,"cpuPercent":100,"memPercent":100}],"service":{"ports":[{"protocol":"TCP","containerPort":666,"servicePort":666}]},"volumes":[],"desc":"111"}
+obj_json = {"name":"hello-test2","namespace":"default","stateful":"none","replicas":1,"cpu":100,"memory":256,"diskSize":20000,"containers":[{"name":"hello-test","image":"registry.ekos.local/library/stress_centos:latest","command":"sh","envs":[],"logDir":"","healthCheck":None,"cpuPercent":100,"memPercent":100}],"service":{"ports":[{"protocol":"TCP","containerPort":666,"servicePort":666}]},"volumes":[],"desc":"111"}
 for i in range(app_num):
 	obj_json['name'] = appname_tmp + str(i)
 	app_rtn = my_utils.call_rest_api(url,"POST",cookies=cookies,json=json.dumps(obj_json))
@@ -21,8 +21,8 @@ for i in range(app_num):
 		info('create application: %s successfully' %obj_json['name'])
 	else:
 		sys.exit()
-info('sleep 60 seconds')
-my_utils.bar_sleep(60)
+info('sleep 120 seconds')
+my_utils.bar_sleep(120)
 
 #get app name
 app_list = []

@@ -29,6 +29,13 @@ if refresh_testbed:
 		error('active plugin failed')
 		sys.exit()
 
+#check if need upload stress img
+cmd = "docker images |grep stress_centos"
+rtn = my_utils.ssh_cmd(master_ip,"root","password",cmd)
+if not rtn['stdout']:
+	info('download and push images!')
+	my_utils.download_upload_img(master_ip)
+
 log_dir = "/var/log/"
 
 test_result = {}
@@ -70,11 +77,14 @@ for tc in os.listdir(workdir):
 
 
 info(test_result)
-all_content = "<h3>build: %s</h3>\n<tr><td>TC ID</td><td>Start Time</td><td>End Time</td><td>Result</td></tr>" % test_build
+all_content = "<h3>build: %s</h3>\n<tr bgcolor=\"blue\" style=\"color:white\"><td>TC ID</td><td>Start Time</td><td>End Time</td><td>Result</td></tr>" % test_build
 for result in test_result.keys():
-	content = "<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>\n" % (test_result[result]['tc_id'],test_result[result]['start_time'],test_result[result]['end_time'],test_result[result]['result'])
+	if test_result[result]['result'] == 'failed':
+		content = "<tr style=\"font-size:15px\"><td>%s</td><td>%s</td><td>%s</td><td ><font color=\"red\">%s</font></td></tr>\n" % (test_result[result]['tc_id'],test_result[result]['start_time'],test_result[result]['end_time'],test_result[result]['result'])
+	else:
+		content = "<tr style=\"font-size:15px\"><td>%s</td><td>%s</td><td>%s</td><td ><font color=\"green\">%s</font></td></tr>\n" % (test_result[result]['tc_id'],test_result[result]['start_time'],test_result[result]['end_time'],test_result[result]['result'])
 	all_content = all_content + '\n' + content
 html_content = "<table border=\"1\" cellpadding=\"2\" width=\"800\">" + all_content + "</table>"
-cmd = "echo \"" + html_content + "\"" "| mail -s \"$(echo -e \"stress result\\nContent-Type: text/html;charset=gb2312\")\" chenlong@ghostcloud.cn"
+cmd = "echo \"" + html_content + "\"" "| mail -s \"$(echo -e \"stress result\\nContent-Type: text/html;charset=gb2312\")\" chenlong@ghostcloud.cn lichengsong@ghostcloud.cn"
 my_utils.runcmd(cmd)
 
